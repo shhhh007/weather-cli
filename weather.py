@@ -28,6 +28,17 @@ WEATHER_CODES = {
     99: "thunderstorm with heavy hail",
 }
 
+# an icon for every group of weather codes
+WEATHER_ICONS = {
+    0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+    45: "🌫️", 48: "🌫️",
+    51: "🌦️", 53: "🌦️", 55: "🌧️",
+    61: "🌦️", 63: "🌧️", 65: "🌧️",
+    71: "🌨️", 73: "🌨️", 75: "❄️",
+    80: "🌦️", 81: "🌧️", 82: "⛈️",
+    95: "⛈️", 96: "⛈️", 99: "⛈️",
+}
+
 response = requests.get(URL)
 data = response.json()
 
@@ -37,8 +48,9 @@ temperature = current["temperature_2m"]
 wind = current["wind_speed_10m"]
 code = current["weather_code"]
 description = WEATHER_CODES.get(code, "unknown condition")
+icon = WEATHER_ICONS.get(code, "🌡️")
 
-print("Weather in Frankfurt am Main")
-print(f"Temperature: {temperature} C")
-print(f"Wind:        {wind} km/h")
-print(f"Condition:   {description}")
+print(f"{icon} Weather in Frankfurt am Main")
+print(f"🌡️ Temperature: {temperature} °C")
+print(f"💨 Wind:        {wind} km/h")
+print(f"{icon} Condition:   {description}")
