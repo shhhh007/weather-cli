@@ -11,7 +11,7 @@ Fetches a forecast from the free [Open-Meteo API](https://open-meteo.com) and pr
 ## Roadmap
 
 - [x] Evening 1 — first HTTP request with `requests`, print raw JSON
-- [ ] Evening 2 — parse the JSON: temperature, wind, weather codes
+- [x] Evening 2 — parse the JSON: temperature, wind, weather codes
 - [ ] Evening 3 — city name → coordinates via the geocoding API
 - [ ] Evening 4 — pretty formatted output for several days
 - [ ] Evening 5 — error handling: city not found, no network
