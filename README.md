@@ -20,7 +20,16 @@ Fetches a forecast from the free [Open-Meteo API](https://open-meteo.com) and pr
 
 ## Usage
 
-Will appear as the project grows.
+```text
+$ python weather.py
+🌤️ Weather in Frankfurt am Main
+🌡️ Temperature: 21.6 °C
+💨 Wind:        8.0 km/h
+🌤️ Condition:   mainly clear
+```
+
+Requires the `requests` library: `pip install requests`.
+Data by the free [Open-Meteo API](https://open-meteo.com) — no API key needed.
 
 ## License
 
