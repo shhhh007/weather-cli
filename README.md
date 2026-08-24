@@ -13,7 +13,7 @@ Fetches a forecast from the free [Open-Meteo API](https://open-meteo.com) and pr
 - [x] Evening 1 — first HTTP request with `requests`, print raw JSON
 - [x] Evening 2 — parse the JSON: temperature, wind, weather codes
 - [x] Evening 3 — city name → coordinates via the geocoding API
-- [ ] Evening 4 — pretty formatted output for several days
+- [x] Evening 4 — pretty formatted output for several days
 - [ ] Evening 5 — error handling: city not found, no network
 - [ ] Evening 6 — command-line arguments, final polish
 - [ ] Evening 7 — README demo section, tests, release
