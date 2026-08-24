@@ -58,11 +58,13 @@ def get_place(city):
 
 
 def get_weather(latitude, longitude):
-    """Fetch the current weather for the given coordinates."""
+    """Fetch current weather and a 3-day forecast for the given coordinates."""
     response = requests.get(FORECAST_URL, params={
         "latitude": latitude,
         "longitude": longitude,
         "current": "temperature_2m,wind_speed_10m,weather_code",
+        "daily": "weather_code,temperature_2m_max,temperature_2m_min",
+        "forecast_days": 3,
         "timezone": "auto",
     })
     return response.json()
@@ -89,6 +91,19 @@ def main():
     print(f"🌡️ Temperature: {current['temperature_2m']} °C")
     print(f"💨 Wind:        {current['wind_speed_10m']} km/h")
     print(f"{icon} Condition:   {WEATHER_CODES.get(code, 'unknown condition')}")
+
+    # the API returns parallel lists: dates, codes, daily max and min temperatures
+    daily = data["daily"]
+    print("\n3-day forecast:")
+    for date, day_code, t_max, t_min in zip(
+        daily["time"],
+        daily["weather_code"],
+        daily["temperature_2m_max"],
+        daily["temperature_2m_min"],
+    ):
+        day_icon = WEATHER_ICONS.get(day_code, "🌡️")
+        description = WEATHER_CODES.get(day_code, "")
+        print(f"  {date}  {day_icon} {t_min:>5.1f} / {t_max:.1f} °C  {description}")
 
 
 if __name__ == "__main__":
