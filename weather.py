@@ -1,7 +1,9 @@
+import sys
+
 import requests
 
-# Frankfurt am Main, Germany
-URL = "https://api.open-meteo.com/v1/forecast?latitude=50.1109&longitude=8.6821&current=temperature_2m,wind_speed_10m,weather_code"
+GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
+FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
 # WMO weather interpretation codes (WW): https://open-meteo.com/en/docs
 WEATHER_CODES = {
@@ -39,18 +41,55 @@ WEATHER_ICONS = {
     95: "⛈️", 96: "⛈️", 99: "⛈️",
 }
 
-response = requests.get(URL)
-data = response.json()
 
-# dig into the nested dictionary: data -> "current" -> keys
-current = data["current"]
-temperature = current["temperature_2m"]
-wind = current["wind_speed_10m"]
-code = current["weather_code"]
-description = WEATHER_CODES.get(code, "unknown condition")
-icon = WEATHER_ICONS.get(code, "🌡️")
+def get_place(city):
+    """Turn a city name into coordinates. Returns (latitude, longitude, name, country) or None."""
+    response = requests.get(GEOCODING_URL, params={
+        "name": city,
+        "count": 1,
+        "language": "en",
+        "format": "json",
+    })
+    results = response.json().get("results")
+    if not results:
+        return None
+    place = results[0]
+    return place["latitude"], place["longitude"], place["name"], place.get("country", "")
 
-print(f"{icon} Weather in Frankfurt am Main")
-print(f"🌡️ Temperature: {temperature} °C")
-print(f"💨 Wind:        {wind} km/h")
-print(f"{icon} Condition:   {description}")
+
+def get_weather(latitude, longitude):
+    """Fetch the current weather for the given coordinates."""
+    response = requests.get(FORECAST_URL, params={
+        "latitude": latitude,
+        "longitude": longitude,
+        "current": "temperature_2m,wind_speed_10m,weather_code",
+        "timezone": "auto",
+    })
+    return response.json()
+
+
+def main():
+    # first command-line argument is the city, fallback: Frankfurt
+    city = sys.argv[1] if len(sys.argv) > 1 else "Frankfurt"
+
+    place = get_place(city)
+    if place is None:
+        print(f"City not found: {city}")
+        return
+    latitude, longitude, name, country = place
+
+    data = get_weather(latitude, longitude)
+    current = data["current"]
+
+    location = f"{name}, {country}" if country else name
+    code = current["weather_code"]
+    icon = WEATHER_ICONS.get(code, "🌡️")
+
+    print(f"{icon} Weather in {location}")
+    print(f"🌡️ Temperature: {current['temperature_2m']} °C")
+    print(f"💨 Wind:        {current['wind_speed_10m']} km/h")
+    print(f"{icon} Condition:   {WEATHER_CODES.get(code, 'unknown condition')}")
+
+
+if __name__ == "__main__":
+    main()
