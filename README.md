@@ -14,9 +14,9 @@ Fetches a forecast from the free [Open-Meteo API](https://open-meteo.com) and pr
 - [x] Evening 2 — parse the JSON: temperature, wind, weather codes
 - [x] Evening 3 — city name → coordinates via the geocoding API
 - [x] Evening 4 — pretty formatted output for several days
-- [ ] Evening 5 — error handling: city not found, no network
-- [ ] Evening 6 — command-line arguments, final polish
-- [ ] Evening 7 — README demo section, tests, release
+- [x] Evening 5 — error handling: city not found, no network
+- [x] Evening 6 — command-line arguments, final polish
+- [x] Evening 7 — README demo section, tests, release
 
 ## Usage
 
@@ -26,10 +26,37 @@ $ python weather.py
 🌡️ Temperature: 21.6 °C
 💨 Wind:        8.0 km/h
 🌤️ Condition:   mainly clear
+
+3-day forecast:
+  2026-08-29 🌤️  15.0 / 22.0 °C mainly clear
+  2026-08-30 ⛅  14.0 / 20.0 °C partly cloudy
+  2026-08-31 ☀️  13.0 / 19.0 °C clear sky
 ```
+
+You can also pass a city name:
+
+```text
+$ python weather.py Berlin
+```
+
+If the city can't be found or there's no network connection, the tool prints
+a clear error message and exits with a non-zero status code instead of
+crashing.
 
 Requires the `requests` library: `pip install requests`.
 Data by the free [Open-Meteo API](https://open-meteo.com) — no API key needed.
+
+## Tests
+
+[#tests](#tests)
+
+The project has a small `pytest` suite that mocks all HTTP calls, so it runs
+fully offline:
+
+```text
+pip install pytest
+pytest
+```
 
 ## License
 
