@@ -1,294 +1,128 @@
-"""Tests for weather.py."""
-
-from __future__ import annotations
-
-import requests
 
 import weather
 
-
 class FakeResponse:
-    """Minimal stand-in for requests.Response."""
 
-    def __init__(self, json_data, status_code=200):
-        self._json_data = json_data
+    def __init__(self, data, status_code=200):
+        self.data = data
         self.status_code = status_code
 
-    def raise_for_status(self):
-        if self.status_code >= 400:
-            raise requests.HTTPError(f"HTTP {self.status_code}")
-
     def json(self):
-        return self._json_data
+        return self.data
 
+def test_find_city_success(monkeypatch):
+    fake_data = {
+        "results": [
+            {
+                "name": "Berlin",
+                "country": "Germany",
+                "latitude": 52.52,
+                "longitude": 13.41,
+            }
+        ]
+    }
 
-# ---------------------------------------------------------------------------
-# request_json
-# ---------------------------------------------------------------------------
-
-
-def test_request_json_returns_data(monkeypatch):
-    monkeypatch.setattr(
-        weather.requests,
-        "get",
-        lambda *a, **k: FakeResponse({"ok": True}),
-    )
-
-    result = weather.request_json("http://example.test", {})
-
-    assert result == {"ok": True}
-
-
-def test_request_json_network_error(monkeypatch):
-    def fake_get(*args, **kwargs):
-        raise requests.ConnectionError("no network")
+    def fake_get(url, params, timeout):
+        return FakeResponse(fake_data)
 
     monkeypatch.setattr(weather.requests, "get", fake_get)
 
-    try:
-        weather.request_json("http://example.test", {})
-        assert False, "expected WeatherError"
-    except weather.WeatherError as error:
-        assert "Network error" in str(error)
+    city_info = weather.find_city("Berlin")
 
+    assert city_info["name"] == "Berlin"
+    assert city_info["country"] == "Germany"
+    assert city_info["latitude"] == 52.52
 
-def test_request_json_invalid_json(monkeypatch):
-    class BadJsonResponse(FakeResponse):
-        def json(self):
-            raise ValueError("bad json")
+def test_find_city_not_found(monkeypatch):
+    def fake_get(url, params, timeout):
+        return FakeResponse({"results": []})
 
-    monkeypatch.setattr(
-        weather.requests,
-        "get",
-        lambda *a, **k: BadJsonResponse(None),
-    )
+    monkeypatch.setattr(weather.requests, "get", fake_get)
 
-    try:
-        weather.request_json("http://example.test", {})
-        assert False, "expected WeatherError"
-    except weather.WeatherError as error:
-        assert "invalid data" in str(error)
+    city_info = weather.find_city("Несуществующийгород123")
 
+    assert city_info is None
 
-def test_request_json_non_dict_response(monkeypatch):
-    monkeypatch.setattr(
-        weather.requests,
-        "get",
-        lambda *a, **k: FakeResponse([1, 2, 3]),
-    )
+def test_find_city_no_internet(monkeypatch, capsys):
+    def fake_get(url, params, timeout):
+        raise weather.requests.exceptions.RequestException()
 
-    try:
-        weather.request_json("http://example.test", {})
-        assert False, "expected WeatherError"
-    except weather.WeatherError as error:
-        assert "invalid response" in str(error)
+    monkeypatch.setattr(weather.requests, "get", fake_get)
 
+    city_info = weather.find_city("Berlin")
 
-# ---------------------------------------------------------------------------
-# get_place
-# ---------------------------------------------------------------------------
+    assert city_info is None
+    printed = capsys.readouterr().out
+    assert "интернет" in printed
 
-
-def test_get_place_found(monkeypatch):
-    monkeypatch.setattr(
-        weather,
-        "request_json",
-        lambda url, params: {
-            "results": [
-                {
-                    "latitude": 50.1109,
-                    "longitude": 8.6821,
-                    "name": "Frankfurt am Main",
-                    "country": "Germany",
-                }
-            ]
-        },
-    )
-
-    place = weather.get_place("Frankfurt")
-
-    assert place == (50.1109, 8.6821, "Frankfurt am Main", "Germany")
-
-
-def test_get_place_not_found(monkeypatch):
-    monkeypatch.setattr(
-        weather,
-        "request_json",
-        lambda url, params: {"results": []},
-    )
-
-    assert weather.get_place("Nonexistentcityxyz") is None
-
-
-def test_get_place_missing_country(monkeypatch):
-    monkeypatch.setattr(
-        weather,
-        "request_json",
-        lambda url, params: {
-            "results": [
-                {
-                    "latitude": 1.0,
-                    "longitude": 2.0,
-                    "name": "Somewhere",
-                }
-            ]
-        },
-    )
-
-    place = weather.get_place("Somewhere")
-
-    assert place == (1.0, 2.0, "Somewhere", "")
-
-
-def test_get_place_invalid_data(monkeypatch):
-    monkeypatch.setattr(
-        weather,
-        "request_json",
-        lambda url, params: {"results": [{"latitude": "not-a-number"}]},
-    )
-
-    try:
-        weather.get_place("Weiskirchen")
-        assert False, "expected WeatherError"
-    except weather.WeatherError as error:
-        assert "location data" in str(error)
-
-
-# ---------------------------------------------------------------------------
-# get_weather
-# ---------------------------------------------------------------------------
-
-
-def test_get_weather_passes_coordinates(monkeypatch):
-    captured = {}
-
-    def fake_request_json(url, params):
-        captured["url"] = url
-        captured["params"] = params
-        return {"current": {}, "daily": {}}
-
-    monkeypatch.setattr(weather, "request_json", fake_request_json)
-
-    weather.get_weather(50.11, 8.68)
-
-    assert captured["url"] == weather.FORECAST_URL
-    assert captured["params"]["latitude"] == 50.11
-    assert captured["params"]["longitude"] == 8.68
-    assert captured["params"]["forecast_days"] == 3
-
-
-# ---------------------------------------------------------------------------
-# print_weather
-# ---------------------------------------------------------------------------
-
-
-def test_print_weather_output(capsys):
-    place = (50.11, 8.68, "Frankfurt am Main", "Germany")
-    data = {
+def test_get_weather_success(monkeypatch):
+    fake_data = {
         "current": {
-            "temperature_2m": 21.6,
-            "wind_speed_10m": 8.0,
-            "weather_code": 1,
+            "temperature_2m": 20.0,
+            "wind_speed_10m": 5.0,
+            "weather_code": 0,
         },
         "daily": {
             "time": ["2026-08-29"],
-            "weather_code": [1],
+            "weather_code": [0],
             "temperature_2m_max": [22.0],
             "temperature_2m_min": [15.0],
         },
     }
 
-    weather.print_weather(place, data)
+    def fake_get(url, params, timeout):
+        return FakeResponse(fake_data)
 
-    output = capsys.readouterr().out
-    assert "Frankfurt am Main, Germany" in output
-    assert "21.6" in output
-    assert "3-day forecast" in output
+    monkeypatch.setattr(weather.requests, "get", fake_get)
 
+    result = weather.get_weather(52.52, 13.41)
 
-def test_print_weather_incomplete_current_data():
-    place = (0.0, 0.0, "Nowhere", "")
-    data = {"current": {}, "daily": {}}
+    assert result["current"]["temperature_2m"] == 20.0
 
-    try:
-        weather.print_weather(place, data)
-        assert False, "expected WeatherError"
-    except weather.WeatherError as error:
-        assert "weather data" in str(error)
+def test_get_weather_no_internet(monkeypatch):
+    def fake_get(url, params, timeout):
+        raise weather.requests.exceptions.RequestException()
 
+    monkeypatch.setattr(weather.requests, "get", fake_get)
 
-# ---------------------------------------------------------------------------
-# parse_args
-# ---------------------------------------------------------------------------
+    result = weather.get_weather(52.52, 13.41)
 
+    assert result is None
 
-def test_parse_args_default(monkeypatch):
-    monkeypatch.setattr("sys.argv", ["weather.py"])
+def test_print_weather(capsys):
+    city_info = {
+        "name": "Berlin",
+        "country": "Germany",
+        "latitude": 52.52,
+        "longitude": 13.41,
+    }
 
-    args = weather.parse_args()
-
-    assert args.city == "Frankfurt"
-
-
-def test_parse_args_custom_city(monkeypatch):
-    monkeypatch.setattr("sys.argv", ["weather.py", "Berlin"])
-
-    args = weather.parse_args()
-
-    assert args.city == "Berlin"
-
-
-# ---------------------------------------------------------------------------
-# main
-# ---------------------------------------------------------------------------
-
-
-def test_main_success(monkeypatch):
-    monkeypatch.setattr("sys.argv", ["weather.py", "Frankfurt"])
-    monkeypatch.setattr(
-        weather,
-        "get_place",
-        lambda city: (50.11, 8.68, "Frankfurt am Main", "Germany"),
-    )
-    monkeypatch.setattr(
-        weather,
-        "get_weather",
-        lambda lat, lon: {
-            "current": {
-                "temperature_2m": 20.0,
-                "wind_speed_10m": 5.0,
-                "weather_code": 0,
-            },
-            "daily": {
-                "time": ["2026-08-29"],
-                "weather_code": [0],
-                "temperature_2m_max": [21.0],
-                "temperature_2m_min": [14.0],
-            },
+    weather_data = {
+        "current": {
+            "temperature_2m": 20.0,
+            "wind_speed_10m": 5.0,
+            "weather_code": 0,
         },
-    )
+        "daily": {
+            "time": ["2026-08-29"],
+            "weather_code": [0],
+            "temperature_2m_max": [22.0],
+            "temperature_2m_min": [15.0],
+        },
+    }
 
-    assert weather.main() == 0
+    weather.print_weather(city_info, weather_data)
 
+    printed = capsys.readouterr().out
+    assert "Berlin, Germany" in printed
+    assert "20.0" in printed
+    assert "Прогноз на 3 дня" in printed
 
 def test_main_city_not_found(monkeypatch, capsys):
-    monkeypatch.setattr("sys.argv", ["weather.py", "Nonexistentcityxyz"])
-    monkeypatch.setattr(weather, "get_place", lambda city: None)
+    monkeypatch.setattr("sys.argv", ["weather.py", "Несуществующийгород123"])
+    monkeypatch.setattr(weather, "find_city", lambda name: None)
 
-    exit_code = weather.main()
+    weather.main()
 
-    assert exit_code == 1
-    assert "City not found" in capsys.readouterr().err
-
-
-def test_main_handles_weather_error(monkeypatch, capsys):
-    def raise_error(city):
-        raise weather.WeatherError("Network error. Check your internet connection.")
-
-    monkeypatch.setattr("sys.argv", ["weather.py", "Frankfurt"])
-    monkeypatch.setattr(weather, "get_place", raise_error)
-
-    exit_code = weather.main()
-
-    assert exit_code == 1
-    assert "Error:" in capsys.readouterr().err
+    printed = capsys.readouterr().out
+    assert "не найден" in printed
