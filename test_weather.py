@@ -122,7 +122,10 @@ def test_main_city_not_found(monkeypatch, capsys):
     monkeypatch.setattr("sys.argv", ["weather.py", "Несуществующийгород123"])
     monkeypatch.setattr(weather, "find_city", lambda name: None)
 
-    weather.main()
+    try:
+        weather.main()
+    except SystemExit as e:
+        assert e.code == 1
 
     printed = capsys.readouterr().out
     assert "не найден" in printed

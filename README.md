@@ -22,15 +22,15 @@ Fetches a forecast from the free [Open-Meteo API](https://open-meteo.com) and pr
 
 ```text
 $ python weather.py
-🌤️ Weather in Frankfurt am Main
-🌡️ Temperature: 21.6 °C
-💨 Wind:        8.0 km/h
-🌤️ Condition:   mainly clear
+🌤️ Погода в городе Frankfurt am Main
+🌡️ Температура: 21.6 °C
+💨 Ветер:       8.0 км/ч
+🌤️ Состояние:   малооблачно
 
-3-day forecast:
-  2026-08-29 🌤️  15.0 / 22.0 °C mainly clear
-  2026-08-30 ⛅  14.0 / 20.0 °C partly cloudy
-  2026-08-31 ☀️  13.0 / 19.0 °C clear sky
+Прогноз на 3 дня:
+  2026-08-29 🌤️  15.0 / 22.0 °C малооблачно
+  2026-08-30 ⛅  14.0 / 20.0 °C переменная облачность
+  2026-08-31 ☀️  13.0 / 19.0 °C ясно
 ```
 
 You can also pass a city name:
@@ -47,8 +47,6 @@ Requires the `requests` library: `pip install requests`.
 Data by the free [Open-Meteo API](https://open-meteo.com) — no API key needed.
 
 ## Tests
-
-[#tests](#tests)
 
 The project has a small `pytest` suite that mocks all HTTP calls, so it runs
 fully offline:

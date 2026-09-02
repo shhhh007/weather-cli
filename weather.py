@@ -159,12 +159,12 @@ def main():
 
     if city_info is None:
         print("Город не найден: " + city_name)
-        return
+        sys.exit(1)
 
     weather_data = get_weather(city_info["latitude"], city_info["longitude"])
 
     if weather_data is None:
-        return
+        sys.exit(1)
 
     print_weather(city_info, weather_data)
 
