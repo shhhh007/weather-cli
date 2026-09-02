@@ -1,9 +1,9 @@
-
 import sys
 import requests
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+
 
 WEATHER_CODES = {
     0: "ясно",
@@ -29,6 +29,7 @@ WEATHER_CODES = {
     99: "сильная гроза с градом",
 }
 
+
 WEATHER_ICONS = {
     0: "☀️",
     1: "🌤️",
@@ -52,6 +53,7 @@ WEATHER_ICONS = {
     96: "⛈️",
     99: "⛈️",
 }
+
 
 def find_city(city_name):
     params = {
@@ -88,6 +90,7 @@ def find_city(city_name):
 
     return city_info
 
+
 def get_weather(latitude, longitude):
     params = {
         "latitude": latitude,
@@ -109,6 +112,7 @@ def get_weather(latitude, longitude):
         return None
 
     return response.json()
+
 
 def print_weather(city_info, weather_data):
     city_name = city_info["name"]
@@ -148,6 +152,7 @@ def print_weather(city_info, weather_data):
             + str(min_temps[i]) + " / " + str(max_temps[i]) + " °C "
             + day_condition
         )
+
 
 def main():
     if len(sys.argv) > 1:

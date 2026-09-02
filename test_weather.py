@@ -1,4 +1,3 @@
-
 import weather
 
 class FakeResponse:
